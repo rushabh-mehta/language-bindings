@@ -1,6 +1,6 @@
 sentences = []
 
-with open('readme.txt') as f:
+with open('input.txt') as f:
     lines = f.readlines()
 
 for sentence in lines:
