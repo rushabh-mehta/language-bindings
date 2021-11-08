@@ -1,0 +1,14 @@
+This is a text file
+this file will be used as input to the mapreduce program
+
+
+Program 3
+Program 2
+Program 1
+
+test sentence
+
+
+test 1
+test 2 
+test 1 2 3 
