@@ -1,40 +1,45 @@
-from operator import itemgetter
-import sys
+import concurrent.futures
 
-current_word = None
-current_count = 0
-word = None
+def count_words(sentences):
+    word_count = {}
+    for sentence in sentences:
+        for word in sentence.split(" "):
+            if(word in word_count):
+                word_count[word]+=1
+            else:
+                word_count[word] = 1
+    return word_count
 
-sentence = "this is an example of map reduce and this example might not be enough to show how it really works but it will at least show how it is implemented"
+sentences = []
 
-# input comes from STDIN
-for line in sys.stdin:
-    # remove leading and trailing whitespace
-    line = line.strip()
+with open('input.txt') as f:
+    lines = f.readlines()
 
-    # parse the input we got from mapper.py
-    word, count = line.split('\t', 1)
+for sentence in lines:
+    temp = sentence.strip()
+    if temp != '':
+        sentences.append(temp)    
 
-    # convert count (currently a string) to int
-    try:
-        count = int(count)
-    except ValueError:
-        # count was not a number, so silently
-        # ignore/discard this line
-        continue
+num_threads = 4
+with concurrent.futures.ThreadPoolExecutor() as executor:
+    futures = []
+    total_len = len(sentences)
+    add_len = total_len//num_threads;
+    curr_len = 0
+    for i in range(num_threads):
+        if(i==num_threads-1):
+            divide_sentences = sentences[curr_len:]
+        else:
+            divide_sentences = sentences[curr_len:curr_len+add_len]
+        futures.append(executor.submit(count_words, divide_sentences))
+        curr_len += add_len
 
-    # this IF-switch only works because Hadoop sorts map output
-    # by key (here: word) before it is passed to the reducer
-    if current_word == word:
-        current_count += count
-    else:
-        if current_word:
-            # write result to STDOUT
-            print ('%s\t%s' % (current_word, current_count))
-        current_count = count
-        current_word = word
+    int_maps = []
+    for future in concurrent.futures.as_completed(futures):
+        int_maps.append(future.result())
 
-# do not forget to output the last word if needed!
-if current_word == word:
-    print ('%s\t%s' % (current_word, current_count))
-    
+def combine_results(int_maps):
+    result_map = {}
+    for temp_map in int_maps:
+        for key,value in temp_map.items():
+            result_map[key]=result_map.get(key, 0) + value
